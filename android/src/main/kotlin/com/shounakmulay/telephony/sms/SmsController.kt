@@ -60,21 +60,36 @@ class SmsController(private val context: Context) {
     }
 
     // SEND SMS
-    fun sendSms(destinationAddress: String, messageBody: String, listenStatus: Boolean) {
-        val smsManager = getSmsManager()
-        if (listenStatus) {
-            val pendingIntents = getPendingIntents()
-            smsManager.sendTextMessage(
-                destinationAddress,
-                null,
-                messageBody,
-                pendingIntents.first,
-                pendingIntents.second
-            )
-        } else {
-            smsManager.sendTextMessage(destinationAddress, null, messageBody, null, null)
-        }
+    fun sendSms(destinationAddress: String, messageBody: String, listenStatus: Boolean, simSlot: Int?) {
+    val smsManager = if (simSlot != null) {
+        getSmsManagerForSlot(simSlot)
+    } else {
+        getSmsManager()
     }
+    
+    if (listenStatus) {
+        val pendingIntents = getPendingIntents()
+        smsManager.sendTextMessage(
+            destinationAddress,
+            null,
+            messageBody,
+            pendingIntents.first,
+            pendingIntents.second
+        )
+    } else {
+        smsManager.sendTextMessage(destinationAddress, null, messageBody, null, null)
+    }
+}
+
+private fun getSmsManagerForSlot(simSlot: Int): SmsManager {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val smsManager = context.getSystemService(SmsManager::class.java)
+        smsManager?.createForSubscriptionId(simSlot) 
+            ?: throw RuntimeException("Failed to get SmsManager for slot $simSlot")
+    } else {
+        SmsManager.getSmsManagerForSubscriptionId(simSlot)
+    }
+}
 
     fun sendMultipartSms(destinationAddress: String, messageBody: String, listenStatus: Boolean) {
         val smsManager = getSmsManager()

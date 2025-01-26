@@ -76,6 +76,7 @@ class SmsMethodCallHandler(
   private lateinit var phoneNumber: String
 
   private var requestCode: Int = -1
+  private var simSlot: Int? = null
 
   override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
     this.result = result
@@ -110,6 +111,7 @@ class SmsMethodCallHandler(
           this.address = address
 
           listenStatus = call.argument(LISTEN_STATUS) ?: false
+          this.simSlot = call.argument("sim_slot")
         }
         handleMethod(action, SMS_SEND_REQUEST_CODE)
       }
@@ -196,7 +198,7 @@ class SmsMethodCallHandler(
       context.applicationContext.registerReceiver(this, intentFilter)
     }
     when (smsAction) {
-      SmsAction.SEND_SMS -> smsController.sendSms(address, messageBody, listenStatus)
+      SmsAction.SEND_SMS -> smsController.sendSms(address, messageBody, listenStatus,simSlot)
       SmsAction.SEND_MULTIPART_SMS -> smsController.sendMultipartSms(address, messageBody, listenStatus)
       SmsAction.SEND_SMS_INTENT -> smsController.sendSmsIntent(address, messageBody)
       else -> throw IllegalArgumentException()
